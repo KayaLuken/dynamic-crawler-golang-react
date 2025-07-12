@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"dynamic-crawler-golang-react/backend/service"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -106,6 +108,23 @@ func CrawlHandler(c *gin.Context) {
 		}
 	})
 
+	// Save to database
+	crawlService := service.NewCrawlService()
+	savedRecord, err := crawlService.SaveCrawlResult(
+		req.URL,
+		htmlVersion,
+		title,
+		headings,
+		internalLinks,
+		externalLinks,
+		inaccessibleLinks,
+		hasLoginForm,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save crawl result"})
+		return
+	}
+
 	result := CrawlResult{
 		HTMLVersion:       htmlVersion,
 		Title:             title,
@@ -115,5 +134,49 @@ func CrawlHandler(c *gin.Context) {
 		InaccessibleLinks: inaccessibleLinks,
 		HasLoginForm:      hasLoginForm,
 	}
-	c.JSON(http.StatusOK, result)
+
+	// Return both the result and the saved record ID
+	response := gin.H{
+		"result":    result,
+		"record_id": savedRecord.ID,
+		"message":   "Crawl result saved successfully",
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetCrawlHistoryHandler retrieves all crawl history
+func GetCrawlHistoryHandler(c *gin.Context) {
+	crawlService := service.NewCrawlService()
+	history, err := crawlService.GetAllCrawlResults()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve crawl history"})
+		return
+	}
+
+	// Transform the data for better JSON response
+	var historyResponse []gin.H
+	for _, record := range history {
+		// Parse headings JSON string back to map
+		var headings map[string]int
+		json.Unmarshal([]byte(record.Headings), &headings)
+
+		historyResponse = append(historyResponse, gin.H{
+			"id":                 record.ID,
+			"url":                record.URL,
+			"html_version":       record.HTMLVersion,
+			"title":              record.Title,
+			"headings":           headings,
+			"internal_links":     record.InternalLinks,
+			"external_links":     record.ExternalLinks,
+			"inaccessible_links": record.InaccessibleLinks,
+			"has_login_form":     record.HasLoginForm,
+			"crawled_at":         record.CrawledAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"history": historyResponse,
+		"count":   len(historyResponse),
+	})
 }
