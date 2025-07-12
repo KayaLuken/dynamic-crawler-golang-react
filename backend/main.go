@@ -34,5 +34,11 @@ func main() {
 	// Add endpoint to get all crawl results
 	r.GET("/crawl/history", handler.GetCrawlHistoryHandler)
 
+	// Add endpoint for bulk delete
+	r.DELETE("/crawl/bulk", handler.BulkDeleteHandler)
+
+	// Add endpoint for bulk re-run
+	r.POST("/crawl/bulk/rerun", handler.BulkRerunHandler)
+
 	r.Run(":8080")
 }

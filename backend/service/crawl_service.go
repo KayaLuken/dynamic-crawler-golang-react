@@ -44,6 +44,13 @@ func (s *CrawlService) SaveCrawlResult(url, htmlVersion, title string, headings 
 
 	db := database.GetDB()
 
+	// First, check if there's a soft-deleted record and permanently delete it
+	var existingRecord models.CrawlRecord
+	if err := db.Unscoped().Where("url = ? AND deleted_at IS NOT NULL", url).First(&existingRecord).Error; err == nil {
+		// Hard delete the soft-deleted record
+		db.Unscoped().Delete(&existingRecord)
+	}
+
 	// Use upsert to update existing record or create new one
 	result := db.Where("url = ?", url).Assign(crawlRecord).FirstOrCreate(&crawlRecord)
 	if result.Error != nil {
@@ -84,4 +91,15 @@ func (s *CrawlService) GetCrawlResultsByURL(url string) ([]models.CrawlRecord, e
 		return nil, result.Error
 	}
 	return crawlRecords, nil
+}
+
+// BulkDeleteCrawlResults deletes multiple crawl results by their IDs (hard delete)
+func (s *CrawlService) BulkDeleteCrawlResults(ids []uint) (int64, error) {
+	db := database.GetDB()
+	// Use Unscoped() to perform hard delete instead of soft delete
+	result := db.Unscoped().Delete(&models.CrawlRecord{}, ids)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
 }

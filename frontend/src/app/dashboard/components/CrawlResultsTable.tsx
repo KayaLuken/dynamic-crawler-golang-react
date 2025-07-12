@@ -14,7 +14,7 @@ import {
   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Trash2, RefreshCw } from "lucide-react";
 
 import { CrawlResult } from "../types";
 import { useCrawlHistory } from "../hooks/useCrawlHistory";
@@ -29,8 +29,107 @@ export function CrawlResultsTable() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [isPerformingBulkAction, setIsPerformingBulkAction] = useState(false);
+
+  // Bulk action handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(data?.history?.map(item => item.id) || []);
+      setSelectedRows(allIds);
+    } else {
+      setSelectedRows(new Set());
+    }
+  };
+
+  const handleSelectRow = (id: number, checked: boolean) => {
+    const newSelection = new Set(selectedRows);
+    if (checked) {
+      newSelection.add(id);
+    } else {
+      newSelection.delete(id);
+    }
+    setSelectedRows(newSelection);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRows.size === 0) return;
+    
+    setIsPerformingBulkAction(true);
+    try {
+      const idsToDelete = Array.from(selectedRows);
+      const response = await fetch('http://localhost:8080/crawl/bulk', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: idsToDelete }),
+      });
+
+      if (response.ok) {
+        setSelectedRows(new Set());
+        refetch();
+      } else {
+        console.error('Failed to delete selected items');
+      }
+    } catch (error) {
+      console.error('Error deleting items:', error);
+    } finally {
+      setIsPerformingBulkAction(false);
+    }
+  };
+
+  const handleBulkRerun = async () => {
+    if (selectedRows.size === 0) return;
+    
+    setIsPerformingBulkAction(true);
+    try {
+      const idsToRerun = Array.from(selectedRows);
+      const response = await fetch('http://localhost:8080/crawl/bulk/rerun', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: idsToRerun }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`Re-run completed: ${result.success_count} successful, ${result.failed_count} failed`);
+        setSelectedRows(new Set());
+        refetch();
+      } else {
+        console.error('Failed to re-run analysis for selected items');
+      }
+    } catch (error) {
+      console.error('Error re-running analysis:', error);
+    } finally {
+      setIsPerformingBulkAction(false);
+    }
+  };
 
   const columns = useMemo(() => [
+    columnHelper.display({
+      id: "select",
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={data?.history && data.history.length > 0 && selectedRows.size === data.history.length}
+          onChange={(e) => handleSelectAll(e.target.checked)}
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={selectedRows.has(row.original.id)}
+          onChange={(e) => handleSelectRow(row.original.id, e.target.checked)}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      ),
+      size: 50,
+    }),
     columnHelper.accessor("id", {
       header: "ID",
       cell: (info) => info.getValue(),
@@ -184,28 +283,66 @@ export function CrawlResultsTable() {
   return (
     <div className="p-6">
       {/* Header with search and stats */}
-      <div className="mb-6 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search all columns..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+      <div className="mb-6 space-y-4">
+        {/* Search and refresh row */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search all columns..."
+                value={globalFilter}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <button
+              onClick={refetch}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Refresh
+            </button>
           </div>
-          <button
-            onClick={refetch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Refresh
-          </button>
+          <div className="text-sm text-gray-600">
+            Total: {data?.count || 0} results
+          </div>
         </div>
-        <div className="text-sm text-gray-600">
-          Total: {data?.count || 0} results
-        </div>
+        
+        {/* Bulk actions row */}
+        {selectedRows.size > 0 && (
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-blue-900">
+                {selectedRows.size} item{selectedRows.size !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleBulkRerun}
+                  disabled={isPerformingBulkAction}
+                  className="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw size={16} className={isPerformingBulkAction ? "animate-spin" : ""} />
+                  <span>Re-run Analysis</span>
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isPerformingBulkAction}
+                  className="flex items-center space-x-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={16} />
+                  <span>Delete Selected</span>
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedRows(new Set())}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              Clear selection
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
