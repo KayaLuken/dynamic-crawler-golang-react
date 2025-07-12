@@ -7,7 +7,7 @@ interface CrawlJob {
   id: string
   url: string
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
-  result?: any
+  result?: unknown
   error?: string
   startTime?: Date
   endTime?: Date
@@ -79,8 +79,8 @@ export default function BatchCrawlForm() {
               : j
           ))
         }
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
           setJobs(prev => prev.map(j => 
             j.id === job.id 
               ? { ...j, status: 'cancelled', endTime: new Date() }
@@ -90,7 +90,7 @@ export default function BatchCrawlForm() {
         } else {
           setJobs(prev => prev.map(j => 
             j.id === job.id 
-              ? { ...j, status: 'failed', error: error.message, endTime: new Date() }
+              ? { ...j, status: 'failed', error: error instanceof Error ? error.message : 'Unknown error', endTime: new Date() }
               : j
           ))
         }

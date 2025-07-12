@@ -10,7 +10,7 @@ export default function CrawlForm() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingUrl, setProcessingUrl] = useState('')
   const [processingStatus, setProcessingStatus] = useState('')
-  const { mutate, isPending, error, data } = useCrawlApi()
+  const { error, data } = useCrawlApi()
   const setUrl = useCrawlStore((state) => state.setUrl)
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -45,8 +45,8 @@ export default function CrawlForm() {
       } else {
         setProcessingStatus('Crawl failed')
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         setProcessingStatus('Crawl stopped by user')
       } else {
         setProcessingStatus('Crawl failed with error')

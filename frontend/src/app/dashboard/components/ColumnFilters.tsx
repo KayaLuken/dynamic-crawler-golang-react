@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Column } from "@tanstack/react-table";
+import { Column, Table } from "@tanstack/react-table";
 import { CrawlResult } from "../types";
 
 interface ColumnFilterProps {
@@ -32,7 +32,7 @@ export function ColumnFilter({ column, title }: ColumnFilterProps) {
 }
 
 interface FiltersBarProps {
-  table: any; // TanStack Table instance
+  table: Table<CrawlResult>;
 }
 
 export function FiltersBar({ table }: FiltersBarProps) {
@@ -50,12 +50,12 @@ export function FiltersBar({ table }: FiltersBarProps) {
       {showFilters && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <ColumnFilter column={table.getColumn("url")} title="URL" />
-            <ColumnFilter column={table.getColumn("title")} title="Title" />
-            <ColumnFilter column={table.getColumn("html_version")} title="HTML Version" />
-            <ColumnFilter column={table.getColumn("internal_links")} title="Internal Links" />
-            <ColumnFilter column={table.getColumn("external_links")} title="External Links" />
-            <ColumnFilter column={table.getColumn("inaccessible_links")} title="Inaccessible Links" />
+            {table.getColumn("url") && <ColumnFilter column={table.getColumn("url")!} title="URL" />}
+            {table.getColumn("title") && <ColumnFilter column={table.getColumn("title")!} title="Title" />}
+            {table.getColumn("html_version") && <ColumnFilter column={table.getColumn("html_version")!} title="HTML Version" />}
+            {table.getColumn("internal_links") && <ColumnFilter column={table.getColumn("internal_links")!} title="Internal Links" />}
+            {table.getColumn("external_links") && <ColumnFilter column={table.getColumn("external_links")!} title="External Links" />}
+            {table.getColumn("inaccessible_links") && <ColumnFilter column={table.getColumn("inaccessible_links")!} title="Inaccessible Links" />}
           </div>
           
           <div className="mt-4 flex space-x-2">

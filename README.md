@@ -1,11 +1,55 @@
 # Dynamic Web Crawler - Go & React
 
-A comprehensive web crawler application with a Next.js frontend and Go backend. Features persistent storage, dashboard analytics, and bulk operations.
+A comprehensive web crawler application with a Next.js frontend and Go backend. Features persistent SQLite storage, dashboard analytics, and bulk operations with start/stop processing controls.
+
+## 🚀 Quick Start
+
+### Option 1: Docker Compose (Recommended)
+```powershell
+# Start all services (Backend + Frontend)
+docker-compose up -d
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+### Option 2: Manual Setup
+
+#### Prerequisites
+- Go 1.23+
+- Node.js 18+
+
+#### Step 1: Start Backend
+```powershell
+cd backend
+go mod download
+go build -o crawler.exe main.go
+.\crawler.exe
+```
+
+#### Step 2: Start Frontend
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+#### Step 3: Access the Application
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- Database: SQLite file (backend/crawl_data.db)
 
 ## ✨ Features
 
 ### Core Functionality
 - **URL Crawling**: Analyze websites for HTML version, headings, links, and login forms
+- **Start/Stop Processing**: Control crawling with start/stop buttons and batch processing
 - **Persistent Storage**: SQLite database with automatic migration and unique URL constraints
 - **Dashboard Analytics**: View crawl history with sorting, filtering, and pagination
 - **Detailed Reports**: Individual crawl results with charts and broken link analysis
@@ -18,38 +62,6 @@ A comprehensive web crawler application with a Next.js frontend and Go backend. 
 - **Real-time Updates**: Live data refresh and background processing
 - **Advanced Filtering**: Search and filter by multiple criteria
 
-## 🚀 Quick Start
-
-### Option 1: Use the Batch Script (Recommended)
-```cmd
-start-all.bat
-```
-
-### Option 2: Use PowerShell Script
-```powershell
-# Start both services
-.\start-services.ps1
-
-# Start backend only
-.\start-services.ps1 -Service backend
-
-# Start frontend only
-.\start-services.ps1 -Service frontend
-```
-
-### Option 3: Manual Setup
-```cmd
-# Terminal 1 - Backend
-cd backend
-go build -o crawler.exe main.go
-.\crawler.exe
-
-# Terminal 2 - Frontend
-cd frontend
-npm install
-npm run dev
-```
-
 ## 📊 Usage
 
 1. **Access the Application**
@@ -58,12 +70,13 @@ npm run dev
 
 2. **Crawl a Website**
    - Navigate to the crawl page
-   - Enter a URL (e.g., https://example.com)
-   - Click "Analyze Website"
+   - **Single URL**: Enter a URL and click "Start Crawl"
+   - **Batch Processing**: Add multiple URLs and click "Start All"
+   - **Control**: Use Stop button to cancel processing
 
 3. **View Results**
-   - Dashboard shows all crawl history
-   - Click on any row to view detailed analytics
+   - Dashboard shows all crawl history with advanced table features
+   - Click on any row to view detailed analytics with charts
    - Use search and filters to find specific results
 
 4. **Bulk Operations**
@@ -95,94 +108,68 @@ dynamic-crawler-golang-react/
 │   │   └── crawl.go         # Data models and structs
 │   ├── database/
 │   │   └── db.go            # Database connection and migration
-│   └── tests/
-│       └── handler_test.go  # Unit tests
+│   └── Dockerfile           # Backend container config
 ├── frontend/
 │   └── src/app/
 │       ├── page.tsx         # Home page with crawl form
+│       ├── crawl/           # Crawl page with start/stop controls
 │       ├── dashboard/       # Dashboard and analytics
-│       │   ├── page.tsx
-│       │   ├── [id]/
-│       │   │   └── page.tsx # Detailed view
-│       │   └── components/
-│       │       ├── CrawlResultsTable.tsx
-│       │       ├── ColumnFilters.tsx
-│       │       └── LoadingComponents.tsx
 │       └── components/
-│           └── Nav.tsx      # Navigation component
-├── start-all.bat           # Windows batch script
-├── start-services.ps1      # PowerShell script
+│           └── Nav.tsx      # Modern navigation component
+├── docker-compose.yml       # Full stack deployment
 └── README.md               # This file
 ```
 
-## 📈 Dashboard Features
+## � Troubleshooting
 
-### Results Table
-- **Sortable Columns**: Click headers to sort by any field
-- **Global Search**: Search across all columns simultaneously
-- **Column Filters**: Filter by specific criteria
-- **Pagination**: Navigate through large datasets
-- **Clickable Rows**: Click to view detailed analysis
+### Docker Issues
+1. **Port conflicts**: Change ports in docker-compose.yml if needed
+2. **Build failures**: Run `docker-compose build --no-cache`
+3. **Database issues**: SQLite database is created automatically
 
-### Bulk Actions
-- **Checkbox Selection**: Select individual or all items
-- **Bulk Delete**: Remove multiple entries at once
-- **Bulk Re-analysis**: Refresh data for selected URLs
-- **Selection Counter**: Shows number of selected items
+### Manual Setup Issues
+1. **SQLite database**: The database file is created automatically on first run
+2. **Go dependencies**: Run `go mod download` in backend directory
+3. **Node dependencies**: Run `npm install` in frontend directory
+4. **File permissions**: Ensure write permissions for SQLite database creation
 
-### Detailed View
-- **Visual Charts**: Pie and bar charts for link distribution
-- **Broken Links**: List of inaccessible URLs with error details
-- **SEO Metrics**: Heading structure analysis
-- **Metadata**: HTML version, title, and crawl timestamp
+## � Environment Variables
 
-## 🔧 Development
+```bash
+# Backend
+GIN_MODE=release
 
-### Backend Dependencies
-- Go 1.21+
-- Gin web framework
-- GORM for database operations
-- GoQuery for HTML parsing
-- SQLite driver
-
-### Frontend Dependencies
-- Next.js 14+
-- React 18+
-- TailwindCSS
-- TanStack Table
-- Recharts for visualizations
-- Lucide React icons
-
-### Database Schema
-```sql
-CREATE TABLE crawl_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT UNIQUE NOT NULL,
-    html_version TEXT,
-    title TEXT,
-    headings TEXT,
-    internal_links INTEGER,
-    external_links INTEGER,
-    inaccessible_links INTEGER,
-    broken_links TEXT,
-    has_login_form BOOLEAN,
-    crawled_at DATETIME
-);
+# Frontend
+BACKEND_URL=http://localhost:8080
 ```
 
-## 🐛 Troubleshooting
+## 🚀 Production Deployment
 
-### Common Issues
-1. **Port Already in Use**: Ensure ports 3000 and 8080 are available
-2. **Database Locked**: Close any existing connections before restarting
-3. **CORS Errors**: Backend includes CORS middleware for localhost:3000
-4. **Build Failures**: Check Go version and dependencies
+For production deployment, update the docker-compose.yml:
+1. Set proper domain names instead of localhost
+2. Add SSL certificates for HTTPS
+3. Configure proper resource limits
+4. Ensure SQLite database persistence with proper volume mounts
+2. Set proper domain names instead of localhost
+3. Add SSL certificates for HTTPS
+4. Configure proper resource limits
 
-### Logs and Debugging
-- Backend logs are displayed in the console
-- Frontend errors appear in browser console
-- Database file: `backend/crawl_data.db`
+## � Features Overview
 
-## 📝 License
+### Dashboard Features
+- **Advanced Search & Filtering**: Global search and column-specific filters
+- **Sortable Columns**: Click headers to sort by any field
+- **Bulk Operations**: Select multiple items for batch actions
+- **Detailed Views**: Click rows to see comprehensive analytics
+- **Modern UI**: Responsive design with loading states
+
+### Crawl Features
+- **Single URL Processing**: Analyze individual websites
+- **Batch Processing**: Queue multiple URLs for analysis
+- **Start/Stop Controls**: Control processing with real-time feedback
+- **Progress Tracking**: Visual indicators for processing status
+- **Error Handling**: Graceful handling of failed requests
+
+## � License
 
 This project is open source and available under the MIT License.

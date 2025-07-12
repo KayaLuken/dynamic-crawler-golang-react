@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crawler_backend
+    environment:
+      GIN_MODE: release
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/crawl_data.db:/app/crawl_data.db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: crawler_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped

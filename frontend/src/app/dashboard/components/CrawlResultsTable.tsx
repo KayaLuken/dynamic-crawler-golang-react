@@ -111,7 +111,7 @@ export function CrawlResultsTable() {
   const columns = useMemo(() => [
     columnHelper.display({
       id: "select",
-      header: ({ table }) => (
+      header: () => (
         <input
           type="checkbox"
           checked={data?.history && data.history.length > 0 && selectedRows.size === data.history.length}
@@ -243,7 +243,7 @@ export function CrawlResultsTable() {
       ),
       size: 150,
     }),
-  ], [data?.history, selectedRows]);
+  ], [data?.history, selectedRows, handleSelectAll, handleSelectRow]);
 
   const table = useReactTable({
     data: data?.history || [],
