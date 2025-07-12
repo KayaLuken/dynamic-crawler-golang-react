@@ -14,8 +14,8 @@
 # Go workspace file
 go.work
 
-# Database files (optional - remove this line if you want to commit the data)
-# crawl_data.db
+# Database files
+crawl_data.db
 
 # IDE files
 .vscode/
