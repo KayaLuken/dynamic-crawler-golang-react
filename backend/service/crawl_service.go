@@ -43,7 +43,9 @@ func (s *CrawlService) SaveCrawlResult(url, htmlVersion, title string, headings 
 	}
 
 	db := database.GetDB()
-	result := db.Create(&crawlRecord)
+
+	// Use upsert to update existing record or create new one
+	result := db.Where("url = ?", url).Assign(crawlRecord).FirstOrCreate(&crawlRecord)
 	if result.Error != nil {
 		return nil, result.Error
 	}

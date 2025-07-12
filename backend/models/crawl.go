@@ -9,7 +9,7 @@ import (
 // CrawlRecord represents a crawl record in the database
 type CrawlRecord struct {
 	ID                uint           `gorm:"primaryKey" json:"id"`
-	URL               string         `gorm:"not null" json:"url"`
+	URL               string         `gorm:"not null;uniqueIndex" json:"url"`
 	HTMLVersion       string         `json:"html_version"`
 	Title             string         `json:"title"`
 	Headings          string         `json:"headings"` // JSON string for map[string]int
