@@ -115,6 +115,11 @@ export function CrawlResultsTable() {
         <input
           type="checkbox"
           checked={data?.history && data.history.length > 0 && selectedRows.size === data.history.length}
+          ref={(input) => {
+            if (input) {
+              input.indeterminate = selectedRows.size > 0 && selectedRows.size < (data?.history?.length || 0);
+            }
+          }}
           onChange={(e) => handleSelectAll(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
@@ -238,7 +243,7 @@ export function CrawlResultsTable() {
       ),
       size: 150,
     }),
-  ], []);
+  ], [data?.history, selectedRows]);
 
   const table = useReactTable({
     data: data?.history || [],
