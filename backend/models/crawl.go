@@ -16,6 +16,7 @@ type CrawlRecord struct {
 	InternalLinks     int            `json:"internal_links"`
 	ExternalLinks     int            `json:"external_links"`
 	InaccessibleLinks int            `json:"inaccessible_links"`
+	BrokenLinks       string         `json:"broken_links"` // JSON string for []BrokenLink
 	HasLoginForm      bool           `json:"has_login_form"`
 	CrawledAt         time.Time      `json:"crawled_at"`
 	CreatedAt         time.Time      `json:"created_at"`
@@ -26,4 +27,11 @@ type CrawlRecord struct {
 // TableName specifies the table name for CrawlRecord
 func (CrawlRecord) TableName() string {
 	return "crawl_records"
+}
+
+// BrokenLink represents a broken link with its details
+type BrokenLink struct {
+	URL          string `json:"url"`
+	StatusCode   int    `json:"status_code"`
+	ErrorMessage string `json:"error_message,omitempty"`
 }

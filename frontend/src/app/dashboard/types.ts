@@ -1,3 +1,9 @@
+export interface BrokenLink {
+  url: string;
+  status_code: number;
+  error_message?: string;
+}
+
 export interface CrawlResult {
   id: number;
   url: string;
@@ -14,6 +20,7 @@ export interface CrawlResult {
   internal_links: number;
   external_links: number;
   inaccessible_links: number;
+  broken_links?: BrokenLink[];
   has_login_form: boolean;
   crawled_at: string;
   created_at: string;

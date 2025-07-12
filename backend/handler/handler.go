@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"dynamic-crawler-golang-react/backend/models"
 	"dynamic-crawler-golang-react/backend/service"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gin-gonic/gin"
@@ -77,6 +79,7 @@ func CrawlHandler(c *gin.Context) {
 	internalLinks := 0
 	externalLinks := 0
 	inaccessibleLinks := 0
+	var brokenLinks []models.BrokenLink
 
 	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
 		href, _ := s.Attr("href")
@@ -90,10 +93,24 @@ func CrawlHandler(c *gin.Context) {
 		} else {
 			externalLinks++
 		}
-		// Check accessibility
-		resp, err := http.Head(abs.String())
-		if err != nil || (resp.StatusCode >= 400 && resp.StatusCode < 600) {
+		// Check accessibility with timeout
+		client := &http.Client{
+			Timeout: 2 * time.Second,
+		}
+		resp, err := client.Head(abs.String())
+		if err != nil {
 			inaccessibleLinks++
+			brokenLinks = append(brokenLinks, models.BrokenLink{
+				URL:          abs.String(),
+				StatusCode:   0,
+				ErrorMessage: err.Error(),
+			})
+		} else if resp != nil && resp.StatusCode >= 400 && resp.StatusCode < 600 {
+			inaccessibleLinks++
+			brokenLinks = append(brokenLinks, models.BrokenLink{
+				URL:        abs.String(),
+				StatusCode: resp.StatusCode,
+			})
 		}
 		if resp != nil {
 			resp.Body.Close()
@@ -118,6 +135,7 @@ func CrawlHandler(c *gin.Context) {
 		internalLinks,
 		externalLinks,
 		inaccessibleLinks,
+		brokenLinks,
 		hasLoginForm,
 	)
 	if err != nil {
@@ -161,6 +179,10 @@ func GetCrawlHistoryHandler(c *gin.Context) {
 		var headings map[string]int
 		json.Unmarshal([]byte(record.Headings), &headings)
 
+		// Parse broken links JSON string back to slice
+		var brokenLinks []models.BrokenLink
+		json.Unmarshal([]byte(record.BrokenLinks), &brokenLinks)
+
 		historyResponse = append(historyResponse, gin.H{
 			"id":                 record.ID,
 			"url":                record.URL,
@@ -170,6 +192,7 @@ func GetCrawlHistoryHandler(c *gin.Context) {
 			"internal_links":     record.InternalLinks,
 			"external_links":     record.ExternalLinks,
 			"inaccessible_links": record.InaccessibleLinks,
+			"broken_links":       brokenLinks,
 			"has_login_form":     record.HasLoginForm,
 			"crawled_at":         record.CrawledAt,
 		})

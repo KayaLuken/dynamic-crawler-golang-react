@@ -16,9 +16,15 @@ func NewCrawlService() *CrawlService {
 }
 
 // SaveCrawlResult saves a crawl result to the database
-func (s *CrawlService) SaveCrawlResult(url, htmlVersion, title string, headings map[string]int, internalLinks, externalLinks, inaccessibleLinks int, hasLoginForm bool) (*models.CrawlRecord, error) {
+func (s *CrawlService) SaveCrawlResult(url, htmlVersion, title string, headings map[string]int, internalLinks, externalLinks, inaccessibleLinks int, brokenLinks []models.BrokenLink, hasLoginForm bool) (*models.CrawlRecord, error) {
 	// Convert headings map to JSON string
 	headingsJSON, err := json.Marshal(headings)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert broken links to JSON string
+	brokenLinksJSON, err := json.Marshal(brokenLinks)
 	if err != nil {
 		return nil, err
 	}
@@ -31,6 +37,7 @@ func (s *CrawlService) SaveCrawlResult(url, htmlVersion, title string, headings 
 		InternalLinks:     internalLinks,
 		ExternalLinks:     externalLinks,
 		InaccessibleLinks: inaccessibleLinks,
+		BrokenLinks:       string(brokenLinksJSON),
 		HasLoginForm:      hasLoginForm,
 		CrawledAt:         time.Now(),
 	}
